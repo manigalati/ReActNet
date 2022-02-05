@@ -18,6 +18,10 @@ import torch.utils.data.distributed
 ############
 
 from ffcv.loader import Loader, OrderOption
+from ffcv.fields.decoders import \
+    RandomResizedCropRGBImageDecoder
+from ffcv.transforms import *
+import torchvision as tv
 
 ############
 
