@@ -13,6 +13,14 @@ import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.utils.data.distributed
 
+############
+####MANI####
+############
+
+from ffcv.loader import Loader, OrderOption
+
+############
+
 sys.path.append("../../")
 from utils.utils import *
 from utils import KD_loss
@@ -111,7 +119,12 @@ def main():
                                      std=[0.229, 0.224, 0.225])
 
     # data augmentation
-    crop_scale = 0.08
+    
+    ############
+    ####MANI####
+    ############
+    
+    """crop_scale = 0.08
     lighting_param = 0.1
     train_transforms = transforms.Compose([
         transforms.RandomResizedCrop(224, scale=(crop_scale, 1.0)),
@@ -126,7 +139,27 @@ def main():
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True,
-        num_workers=args.workers, pin_memory=True)
+        num_workers=args.workers, pin_memory=True)"""
+    
+    train_loader = Loader(traindir, batch_size=args.batch_size, num_workers=args.workers, order=OrderOption.RANDOM,
+        pipelines={
+            'image': [
+                RandomResizedCropRGBImageDecoder((224, 224)),#scale=(0.08,1) by default
+                Lighting(lighting_param),
+                transforms.RandomHorizontalFlip(),
+                ToTensor(),
+                # Move to GPU asynchronously as uint8:
+                ToDevice(ch.device('cuda:0')), 
+                # Automatically channels-last:
+                ToTorchImage(), 
+                Convert(ch.float16), 
+                # Standard torchvision transforms still work!
+                tv.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ]
+        }
+    )
+    
+    ############
 
     # load validation data
     val_loader = torch.utils.data.DataLoader(
@@ -186,9 +219,16 @@ def train(epoch, train_loader, model_student, model_teacher, criterion, optimize
 
     for i, (images, target) in enumerate(train_loader):
         data_time.update(time.time() - end)
-        images = images.cuda()
-        target = target.cuda()
+        
+        ############
+        ####MANI####
+        ############
+        
+        #images = images.cuda()
+        #target = target.cuda()
 
+        ############
+        
         # compute outputy
         logits_student = model_student(images)
         logits_teacher = model_teacher(images)
