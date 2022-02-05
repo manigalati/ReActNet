@@ -149,7 +149,7 @@ def main():
         pipelines={
             'image': [
                 RandomResizedCropRGBImageDecoder((224, 224)),#scale=(0.08,1) by default
-                Lighting(lighting_param),
+                Lighting(0.1),
                 transforms.RandomHorizontalFlip(),
                 ToTensor(),
                 # Move to GPU asynchronously as uint8:
